@@ -9,8 +9,8 @@ from torchvision import datasets, models, transforms
 import matplotlib.pyplot as plt
 
 
-from train import train_model
-from config import *
+from ..train import train_model
+from .config import *
 
 #data_dir = 'data/hymenoptera_data' # has train, val subdirs
 
