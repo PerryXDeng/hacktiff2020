@@ -1,16 +1,16 @@
 import numpy as np
 import os
 import torch
-from torch.utils.data import Dataset, Dataloader
+from torch.utils.data import Dataset
 from skimage import io
 import glob
-from .utils import getjsons, get_image_size, image_size_compliant
+from utils import getjsons, get_image_size, image_size_compliant
 
 class SingleImageLabeledDataset(Dataset):
   def __init__(self, data_dir, packages_paths_filepath,
                transform=None, size_cutoff=None):
     packages = np.loadtxt(packages_paths_filepath, dtype=int)
-    package_paths = [os.path.join(data_dir, package) for package in packages]
+    package_paths = [os.path.join(data_dir, str(package)) for package in packages]
     package_imagepaths = [glob.glob(os.path.join(package_path, "*/*.jpg"))
                           for package_path in package_paths]
     self.imagepaths = []
@@ -25,7 +25,7 @@ class SingleImageLabeledDataset(Dataset):
     self.package_3d = {}
 
   def __len__(self):
-    return len(self.filepaths)
+    return len(self.imagepaths)
 
   def __getitem__(self, idx):
     if torch.is_tensor(idx):
@@ -37,10 +37,11 @@ class SingleImageLabeledDataset(Dataset):
     metadata = None
     measurements = None
     
-    observation = {'image': image, 'metadata': metadata,
-                   'measurements': measurements}
     if self.transform is not None:
-      observation = self.transform(observation)
+      observation = self.transform(image)
+
+    observation = {'image': image, 'metadata': metadata,
+                   'measurements': measurements, 'img_path': img_path}
     return observation
 
 class MultiImageLabeledDataset(Dataset):

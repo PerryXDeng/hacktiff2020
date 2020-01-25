@@ -10,15 +10,16 @@ import torch.utils.data as data
 import torchvision
 from torch.autograd import Variable
 import matplotlib.pyplot as plt
-from modules import ResNet_VAE, convtrans2D_output_size
 from sklearn.model_selection import train_test_split
 import pickle
 
-from ..data import SingleImageLabeledDataset
 
-data_dir = "/home/pxd256/evdata/2020_hackathon"
-train_package_txt = ""
-val_package_txt = ""
+from vae.modules import ResNet_VAE, convtrans2D_output_size
+from data.data import SingleImageLabeledDataset
+
+data_dir = "/home/xxd9704/evdata/2020_hackathon"
+train_package_txt = "/home/xxd9704/Workspace/hacktiff2020transferlearning/eighty_list.txt"
+val_package_txt = "/home/xxd9704/Workspace/hacktiff2020transferlearning/twenty_list.txt"
 size_cutoff = 697
 
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   
@@ -32,7 +33,7 @@ dropout_p = 0.2       # dropout probability
 
 
 # training parameters
-epochs = 20        # training epochs
+epochs = 100        # training epochs
 batch_size = 50
 learning_rate = 1e-3
 log_interval = 10   # interval for displaying training info
@@ -142,15 +143,17 @@ transform = transforms.Compose([transforms.Resize([res_size, res_size]),
 # cifar10_train_dataset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
 # cifar10_test_dataset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
 
-train_dataset = SingleImageLabeledDataset(data_dir, package_txt,
+train_dataset = SingleImageLabeledDataset(data_dir, train_package_txt,
                                           transform, size_cutoff)
 
+val_dataset = SingleImageLabeledDataset(data_dir, val_package_txt,
+                                        transform, size_cutoff)
 
 # classes = ('plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck')
 
 # Data loader (input pipeline)
-train_loader = torch.utils.data.DataLoader(dataset=cifar10_train_dataset, batch_size=batch_size, shuffle=True)
-valid_loader = torch.utils.data.DataLoader(dataset=cifar10_test_dataset, batch_size=batch_size, shuffle=False)
+train_loader = torch.utils.data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
+valid_loader = torch.utils.data.DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False)
 
 # Create model
 resnet_vae = ResNet_VAE(fc_hidden1=CNN_fc_hidden1, fc_hidden2=CNN_fc_hidden2, drop_p=dropout_p, CNN_embed_dim=CNN_embed_dim).to(device)
