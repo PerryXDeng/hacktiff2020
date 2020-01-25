@@ -1,27 +1,28 @@
 import os
+from PIL import Image
+
+def get_image_size(img_path):
+    return Image.open(img_path).size
+
+
+def image_size_compliant(img_path, size_cutoff):
+    w, h = get_image_size(img_path)
+    return w < size_cutoff and h < size_cutoff
 
 
 def getjsons(path):
-    type = ""
+    im_type = ""
     root = []
     if "/nadir" in path:
         root = path.split("/nadir")
         #print(path.split("/nadir"))
-        type = "nadir"
+        im_type = "nadir"
     elif "/oblique" in path:
         root = path.split("/obliques")
         #print(path.split("/obliques"))
-        type = "obliques"
+        im_type = "obliques"
     parts = root[0].split('/');
     geojson = root[0]+"/"+parts[len(parts)-1]+".geojson"
     json = path[:-3]+"json"
-    return geojson, json, type
-
-
-
-
-print(getjsons("/local/2020_hackathon/2020_hackathon/19704962/nadirs/19704962_TXZLUF017018NeighOrtho1352X_190711.jpg"));
-print(getjsons("/local/2020_hackathon/2020_hackathon/19704962/obliques/19704962_E_TXZLUF017018NeighObliq1345E_190711.jpg"));
-
-
+    return geojson, json, im_type
 
