@@ -9,6 +9,9 @@ from argparse import ArgumentParser
 
 from typing import NamedTuple, List
 
+def imread(img_path):
+    return cv2.imread(str(img_path))[:, :, ::-1]
+
 
 class Package(NamedTuple):
     """Data for a single "package" (building)."""
@@ -140,7 +143,7 @@ def visualize_package(package_id):
     print("Drawing images...")
     annotated_images = []
     for camera in cameras[:4]:
-        image = camera.load_image()
+        image = camera.load_image(imread)
         """
         image_orig = image
         image = cv2.medianBlur(image, 5)
@@ -182,11 +185,8 @@ def process_roof(package_id):
     min_coords = all_points.min(axis=0)
     max_coord = (all_points - min_coords).max()
     
-    if not any(max(Image.open(img_path).size) >= 697 for img_path in (data_dir/package_id).glob('**/*.jpg')):
-        return
-    
     plt.subplot(121)
-    plt.imshow(camera.load_image()[:,:,::-1])
+    plt.imshow(camera.load_image(imread))
     
     plt.subplot(122)
     for poly in package.roof_polygons:
@@ -200,18 +200,17 @@ def process_roof(package_id):
     plt.get_current_fig_manager().full_screen_toggle()
     plt.show()
 
-def get_camera_vector(camera):
-    cam_mat, rot_mat, trans_vec, rot_mat_x, rot_mat_y, rot_mat_z, euler_angles = cv2.decomposeProjectionMatrix(camera.projection_matrix)
-    a, b, c = euler_angles.squeeze(axis=1)
-    
-    plt.title(f'{a:.1f} {b:.1f} {c:.1f}')
-    plt.imshow(camera.load_image())
-    plt.show()
+
+def get_obliqueness(projection_matrix):
+    """Return a value (roughly between 0 and 1) of how oblique the given projection matrix's view is."""
+    return np.degrees(np.arccos(-projection_matrix[2, 2])) / 60
 
 def get_camera_vectors(package_id):
     package = load_package(package_id)
-    for camera in package.obliques:
-        get_camera_vector(camera)
+    values = []
+    for camera in package.obliques + package.nadirs:
+        values.append(get_obliqueness(camera.projection_matrix))
+    return values
 
 def main(args):
     if args.package_ids:
@@ -226,8 +225,11 @@ def main(args):
         for package_id in package_ids:
             process_roof(package_id)
     elif args.cam_vecs:
+        values = []
         for package_id in package_ids:
-            get_camera_vectors(package_id)
+            values.extend(get_camera_vectors(package_id))
+        plt.hist(values, bins=50)
+        plt.show()
     else:
         for package_id in package_ids:
             visualize_package(package_id)
