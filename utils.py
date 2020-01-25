@@ -26,3 +26,7 @@ def getjsons(path):
     json = path[:-3]+"json"
     return geojson, json, im_type
 
+
+def get_obliqueness(projection_matrix):
+    """Return a value (roughly between 0 and 1) of how oblique the given projection matrix's view is."""
+    return np.degrees(np.arccos(-projection_matrix[2, 2])) / 60
