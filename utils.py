@@ -10,6 +10,13 @@ def image_size_compliant(img_path, size_cutoff):
     return w < size_cutoff and h < size_cutoff
 
 
+def filter_imagepaths(imagepaths, size_cutoff): 
+    if size_cutoff is None:
+        return imagepaths
+    imagepaths = [path for path in imagepaths if image_size_compliant(path, size_cutoff)]
+    return imagepaths
+
+
 def getjsons(path):
     im_type = ""
     root = []

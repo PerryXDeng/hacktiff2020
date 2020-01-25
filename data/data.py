@@ -4,22 +4,21 @@ import torch
 from torch.utils.data import Dataset
 from skimage import io
 import glob
-from utils import getjsons, get_image_size, image_size_compliant
+from utils import getjsons, get_image_size, image_size_compliant, filter_imagepaths
+from tqdm import tqdm
+
 
 class SingleImageLabeledDataset(Dataset):
   def __init__(self, data_dir, packages_paths_filepath,
                transform=None, size_cutoff=None):
+    self.size_cutoff = size_cutoff
     packages = np.loadtxt(packages_paths_filepath, dtype=int)
     package_paths = [os.path.join(data_dir, str(package)) for package in packages]
-    package_imagepaths = [glob.glob(os.path.join(package_path, "*/*.jpg"))
-                          for package_path in package_paths]
-    self.imagepaths = []
-    for package in package_imagepaths:
-      for img_path in package:
-        if size_cutoff is None:
-          self.imagepaths.append(img_path)
-        elif image_size_compliant(img_path, size_cutoff):
-          self.imagepaths.append(img_path)
+    print("filtering images")
+    package_imagepaths = [filter_imagepaths(
+                          glob.glob(os.path.join(package_path, "*/*.jpg")),
+                          size_cutoff)
+                          for package_path in tqdm(package_paths)]
     self.transform = transform
     self.package_measurements = {}
     self.package_3d = {}
