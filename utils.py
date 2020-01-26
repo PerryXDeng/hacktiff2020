@@ -79,7 +79,7 @@ def _get_building_outlines(geojson_path):
         points = points_to_2D(poly)
         points *= 3.28084 # meters to feet
         
-        polygons.append(Polygon(points))
+        polygons.append(Polygon(points).buffer(0))
     
     union = unary_union(polygons)
     if isinstance(union, MultiPolygon):
