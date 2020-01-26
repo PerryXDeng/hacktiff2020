@@ -22,10 +22,11 @@ def train_model(dataloaders, model, criterion, optimizer, scheduler, num_epochs)
             running_corrects = 0
 
             # Iterate over data.
-            for images, metadata, labels in dataloaders[phase]:
-                images = images.cuda()
-                metadata = metadata.cuda()
-                labels = labels.cuda()
+            #for images, metadata, labels, _ in dataloaders[phase]:
+            for batch in dataloaders[phase]:
+                images = batch['image'].cuda()
+                metadata = batch['metadata'].cuda()
+                labels = batch['measurements'].cuda()
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
@@ -48,8 +49,8 @@ def train_model(dataloaders, model, criterion, optimizer, scheduler, num_epochs)
             if phase == 'train' and scheduler is not None:
                 scheduler.step()
 
-            epoch_loss = running_loss / dataset_sizes[phase]
-            epoch_acc = running_corrects.double() / dataset_sizes[phase]
+            epoch_loss = running_loss /len(dataloaders[phase])
+            epoch_acc = running_corrects.double() / len(dataloaders[phase])
 
             print('{} Loss: {:.4f} Acc: {:.4f}'.format(
                 phase, epoch_loss, epoch_acc))

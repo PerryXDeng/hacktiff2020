@@ -7,7 +7,6 @@ import glob
 from utils import getjsons, get_image_size, image_size_compliant, filter_imagepaths
 from tqdm import tqdm
 
-
 class SingleImageLabeledDataset(Dataset):
   def __init__(self, data_dir, packages_paths_filepath,
                transform=None, size_cutoff=None):
@@ -20,6 +19,7 @@ class SingleImageLabeledDataset(Dataset):
                           size_cutoff)
                           for package_path in tqdm(package_paths)]
     self.imagepaths = [imagepath for imagepaths in package_imagepaths for imagepath in imagepaths]
+    self.imagepaths = [path for path in self.imagepaths if "oblique" not in path]
     print("done with filtering")
     self.transform = transform
     self.package_measurements = {}
@@ -35,8 +35,8 @@ class SingleImageLabeledDataset(Dataset):
     image = Image.open(img_path)
     
     geojson_path, imgjson_path, im_type = getjsons(img_path)
-    metadata = 1
-    measurements = 1
+    metadata = torch.randn(1)
+    measurements = torch.randn(1)
     
     if self.transform is not None:
       image = self.transform(image)

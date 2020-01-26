@@ -4,6 +4,7 @@ import json
 import numpy as np
 from shapely.geometry import Polygon, MultiPolygon
 from shapely.ops import unary_union
+from sys import platform
 
 def get_image_size(img_path):
     return Image.open(img_path).size
@@ -24,16 +25,20 @@ def filter_imagepaths(imagepaths, size_cutoff):
 def getjsons(path):
     im_type = ""
     root = []
-    if "/nadir" in path:
-        root = path.split("/nadir")
+    if platform == "win32":
+        symbol = "\\"
+    else:
+        symbol = "/"
+    if "nadir" in path:
+        root = path.split(symbol + "nadirs")
         #print(path.split("/nadir"))
         im_type = "nadir"
-    elif "/oblique" in path:
-        root = path.split("/obliques")
+    elif "oblique" in path:
+        root = path.split(symbol + "obliques")
         #print(path.split("/obliques"))
         im_type = "obliques"
-    parts = root[0].split('/');
-    geojson = root[0]+"/"+parts[len(parts)-1]+".geojson"
+    parts = root[0].split(symbol);
+    geojson = root[0]+symbol+parts[len(parts)-1]+".geojson"
     json = path[:-3]+"json"
     return geojson, json, im_type
 
