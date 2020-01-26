@@ -22,8 +22,8 @@ train_package_txt = "/home/xxd9704/Workspace/hacktiff2020transferlearning/eighty
 val_package_txt = "/home/xxd9704/Workspace/hacktiff2020transferlearning/twenty_list.txt"
 size_cutoff = 697
 
-train_whole = False
-inference = False
+train_whole = True
+inference = True
 
 # os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"   
 # os.environ["CUDA_VISIBLE_DEVICES"] = "0"
@@ -62,15 +62,17 @@ def train(log_interval, model, device, train_loader, optimizer, epoch):
     # set model as training mode
     model.train()
     if inference:
+        model.load_state_dict(torch.load('/home/xxd9704/Workspace/hacktiff2020transferlearning/results_cifar10/model_epoch24.pth'))
         model.eval()
 
     losses = []
-    all_y, all_z, all_mu, all_logvar = [], [], [], []
+    all_y, all_z, all_mu, all_logvar, all_id = [], [], [], [], []
     N_count = 0   # counting total trained sample in one epoch
     for batch_idx, observation in enumerate(train_loader):
         X = observation['image']
         # distribute data to device
         X = X.to(device)
+        #angle = observation['angle']
         y = observation['measurements']
         N_count += X.size(0)
 
@@ -78,14 +80,16 @@ def train(log_interval, model, device, train_loader, optimizer, epoch):
         X_reconst, z, mu, logvar = model(X)  # VAE
         loss = loss_function(X_reconst, X, mu, logvar)
         losses.append(loss.item())
-
-        loss.backward()
-        optimizer.step()
+        if not inference:
+            loss.backward()
+            optimizer.step()
 
         all_z.extend(z.data.cpu().numpy())
         all_y.extend(y.data.numpy())
         all_mu.extend(mu.data.cpu().numpy())
         all_logvar.extend(logvar.data.cpu().numpy())
+        #all_angle.extend(angle)
+        all_id.extend(observation['id'])
 
         # show information
         if (batch_idx + 1) % log_interval == 0:
@@ -96,13 +100,15 @@ def train(log_interval, model, device, train_loader, optimizer, epoch):
     all_z = np.stack(all_z, axis=0)
     all_mu = np.stack(all_mu, axis=0)
     all_logvar = np.stack(all_logvar, axis=0)
+    #all_angle = np.stack(angle)
+    all_id = np.stack(all_id)
 
     # save Pytorch models of best record
     torch.save(model.state_dict(), os.path.join(save_model_path, 'model_epoch{}.pth'.format(epoch + 1)))  # save motion_encoder
     torch.save(optimizer.state_dict(), os.path.join(save_model_path, 'optimizer_epoch{}.pth'.format(epoch + 1)))      # save optimizer
     print("Epoch {} model saved!".format(epoch + 1))
 
-    return X_reconst.data.cpu().numpy(), all_y, all_z, all_mu, all_logvar, losses
+    return X_reconst.data.cpu().numpy(), all_y, all_z, all_mu, all_logvar, losses, all_id
 
 
 def validation(model, device, optimizer, test_loader):
@@ -185,7 +191,7 @@ check_mkdir(save_model_path)
 # start training
 for epoch in range(epochs):
     # train, test model
-    X_reconst_train, y_train, z_train, mu_train, logvar_train, train_losses = train(log_interval, resnet_vae, device, train_loader, optimizer, epoch)
+    X_reconst_train, y_train, z_train, mu_train, logvar_train, train_losses, ids = train(log_interval, resnet_vae, device, train_loader, optimizer, epoch)
     if not train_whole:
         X_reconst_test, y_test, z_test, mu_test, logvar_test, epoch_test_loss = validation(resnet_vae, device, optimizer, valid_loader)
 
@@ -201,6 +207,11 @@ for epoch in range(epochs):
     np.save(os.path.join(save_model_path, 'ResNet_VAE_training_loss.npy'), A)
     np.save(os.path.join(save_model_path, 'y_evtech_train_epoch{}.npy'.format(epoch + 1)), y_train)
     np.save(os.path.join(save_model_path, 'z_evtech_train_epoch{}.npy'.format(epoch + 1)), z_train)
+    np.save(os.path.join(save_model_path, 'id_evtech_train_epoch{}.npy'.format(epoch + 1)), ids)
+    
+ 
+    if inference:
+        np.save(os.path.join(save_model_path, 'Xrecon_evtech_train_epoch{}.npy'.format(epoch + 1)), X_reconst_train)
     if not train_whole:
         np.save(os.path.join(save_model_path, 'z_evtech_test_epoch{}.npy'.format(epoch + 1)), z_test)
         np.save(os.path.join(save_model_path, 'y_evtech_test_epoch{}.npy'.format(epoch + 1)), y_test)

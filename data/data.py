@@ -4,8 +4,15 @@ import torch
 from torch.utils.data import Dataset
 from PIL import Image
 import glob
-from utils import getjsons, get_image_size, image_size_compliant, filter_imagepaths
+from utils import getjsons, get_image_size, image_size_compliant, filter_imagepaths, get_obliqueness
 from tqdm import tqdm
+import json
+
+def get_angle(imgpath):
+  _, imgjson_path, _, _ = getjsons(imgpath)
+  with open(imgjson_path) as f:
+    j = json.load(f)
+  return get_obliqueness(np.array(j['projection'])) 
 
 
 class SingleImageLabeledDataset(Dataset):
@@ -22,8 +29,11 @@ class SingleImageLabeledDataset(Dataset):
     self.imagepaths = [imagepath for imagepaths in package_imagepaths for imagepath in imagepaths]
     print("done with filtering")
     self.transform = transform
-    self.package_measurements = {}
-    self.package_3d = {}
+    print('load measurements')
+    with open('./features.json') as f:
+      self.package_measurements = json.load(f)
+    print('get angles')
+    #self.angles = [get_angle(path) for path in tqdm(self.imagepaths)]
 
   def __len__(self):
     return len(self.imagepaths)
@@ -34,15 +44,15 @@ class SingleImageLabeledDataset(Dataset):
     img_path = self.imagepaths[idx]
     image = Image.open(img_path)
     
-    geojson_path, imgjson_path, im_type = getjsons(img_path)
-    metadata = 1
-    measurements = 1
-    
-    if self.transform is not None:
-      image = self.transform(image)
+    geojson_path, imgjson_path, im_type, packageid = getjsons(img_path)
 
-    observation = {'image': image, 'metadata': metadata,
-                   'measurements': measurements, 'img_path': img_path}
+    #angle = self.angles[idx]
+    cad_measurements = np.array(list(self.package_measurements[str(packageid)].values()), dtype=float)
+ 
+    if self.transform is not None:
+        image = self.transform(image)
+
+    observation = {'image': image, 'id':packageid, 'measurements': cad_measurements}
     return observation
 
 class MultiImageLabeledDataset(Dataset):

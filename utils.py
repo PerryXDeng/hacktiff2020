@@ -1,5 +1,6 @@
 import os
 from PIL import Image
+import numpy as np
 
 def get_image_size(img_path):
     return Image.open(img_path).size
@@ -28,10 +29,11 @@ def getjsons(path):
         root = path.split("/obliques")
         #print(path.split("/obliques"))
         im_type = "obliques"
-    parts = root[0].split('/');
-    geojson = root[0]+"/"+parts[len(parts)-1]+".geojson"
+    parts = root[0].split('/')
+    packageid = parts[len(parts)-1]
+    geojson = root[0]+"/"+packageid+".geojson"
     json = path[:-3]+"json"
-    return geojson, json, im_type
+    return geojson, json, im_type, packageid
 
 
 def get_obliqueness(projection_matrix):
