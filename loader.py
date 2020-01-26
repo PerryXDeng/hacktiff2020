@@ -3,6 +3,8 @@ import numpy as np
 from PIL import Image
 from torch.utils.data import Dataset, DataLoader
 import os
+import random
+
 class HackLoader(Dataset):
 
     def __init__(self, split_txt, root_dir):
@@ -15,11 +17,14 @@ class HackLoader(Dataset):
     def __getitem__(self, idx):
         pack_id = str(int(self.all_packs[idx]))
         pack_path = os.path.join(self.root_dir, pack_id)
-        nadir_path = os.path.join(pack_path, "nadir")
-        obliques_path = os.path.join(pack_path, "obliques")
-        ex_im = os.path.join(obliques_path, os.listdir(obliques_path)[0])
+        nadir_path = os.path.join(pack_path, "nadirs")
+        all_nadir_files = os.listdir(nadir_path)
+        all_nadirs = [x for x in all_nadir_files if ".jpg" in x]
+        rand_nadir = random.randint(0,len(all_nadirs)-1)
+        ex_im = os.path.join(nadir_path, all_nadirs[rand_nadir])
         image = Image.open(ex_im)
         return image
 
-dset = HackLoader("example.txt", "Hackathon_Resources\data_packages")
-print(dset[0])
+#dset = HackLoader("eighty_list.txt", "C:\\Users\\Bowald\\Data\\2020_hackathon")
+#dset[0].show()
+#print(dset[0])

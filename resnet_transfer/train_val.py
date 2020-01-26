@@ -1,16 +1,19 @@
-# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -
 from __future__ import print_function, division
 
-
 import torch
+import torch.nn as nn
 import numpy as np
 import torchvision
 from torchvision import datasets, models, transforms
 import matplotlib.pyplot as plt
+import torch.optim as optim
+from torch.optim import lr_scheduler
+from loader import HackLoader
+from data.data import SingleImageLabeledDataset
 
-
-from ..train import train_model
-from .config import *
+from single_view_train import train_model
+from resnet_transfer.config import *
 
 #data_dir = 'data/hymenoptera_data' # has train, val subdirs
 
@@ -21,35 +24,35 @@ from .config import *
 
 
 # change it to initialize with PyTorch Dataset instance, should spit out image and measurements
-dataset = None 
-total = len(dataset))
+#dataset = HackLoader("..\eighty_list.txt", "C:\\Users\\Bowald\\Data\\2019_hackathon")
+train_dataset = SingleImageLabeledDataset("C:\\Users\\Bowald\\Data\\2020_hackathon","../small.txt",transform=data_transforms['train'], size_cutoff=512)
+val_dataset = SingleImageLabeledDataset("C:\\Users\\Bowald\\Data\\2020_hackathon","../small.txt",transform=data_transforms['val'], size_cutoff=512)
+total = len(train_dataset)
 
+phases = ['train','val'] # change it to just train if val is no longer needed
 
-phases = ['train', 'val'] # change it to just train if val is no longer needed
-
-if len(phases) == 2:
-  random_train_indices = np.random.choice(np.arange(total), size=(total//5)*4, replace=False)
-
-  random_val_indices = np.ones(total, dtype=bool)
-  random_val_indices[random_train_indices] = False
-  random_val_indices = np.nonzero(random_val_indices)
-
-  split_indices = {'train': random_train_indices, 'val': random_val_indices}
-
-  partitions = {x: torch.utils.Subset(dataset, split_indices[x])
-                for x in phases}
-else:
-  partitions = {'train':dataset}
+#if len(phases) == 2:
+#  random_train_indices = np.random.choice(np.arange(total), size=(total//5)*4, replace=False)
+#
+#  random_val_indices = np.ones(total, dtype=bool)
+#  random_val_indices[random_train_indices] = False
+# random_val_indices = np.nonzero(random_val_indices)
+#
+#  split_indices = {'train': random_train_indices, 'val': random_val_indices}
+#
+#  partitions = {}''train
+#  partitions = {x: torch.utils.Subset(dataset, split_indices[x])
+#                for x in phases}
+#else:
+partitions = {'train':train_dataset, 'val':val_dataset}
 
 
 dataloaders = {x: torch.utils.data.DataLoader(partitions[x], batch_size=batch_size,
-                                              shuffle=True, num_workers=num_workers)
+                                              shuffle=True)#, num_workers=num_workers)
                for x in phases}
 
 partition_sizes = {x: len(partitions[x]) for x in phases}
-class_names = partitions['train'].classes
-
-
+#class_names = partitions['train'].classes
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -62,23 +65,29 @@ if fix_pretrained_weights:
 
 # replace fc layer and add linear layer
 class module_with_concat_linear_layer(nn.Module):
-  def __init__(self, pretrained, metadata_dim, output_dim)
+  def __init__(self, pretrained, metadata_dim, output_dim):
     super(module_with_concat_linear_layer, self).__init__()
     self.pretrained = pretrained
 
-    num_ftrs = pretrained.fc.in_features + metadata_dim
-    self.fc = nn.Softmax(num_ftrs, num_trained_hidden_neurons)
-    pretrained.fc = nn.Identity()
-
+    num_ftrs = pretrained.fc.in_features #+ metadata_dim
+    self.pretrained.fc = nn.Linear(num_ftrs, num_new_hidden_neurons)
+    #self.fc = nn.Softmax(num_ftrs, num_new_hidden_neurons)
+    #pretrained.fc = nn.Identity()
+    self.sigmoid = nn.Sigmoid()
+    #self.fc = nn.Softmax(num_ftrs, num_new_hidden_neurons)
+    #pretrained.fc = nn.Identity()
     self.linear = nn.modules.Linear(num_new_hidden_neurons, output_dim)
   
   def forward(self, x, metadata):
     x = self.pretrained(x)
-    x = torch.cat((x, metadata), 1) # 1 because 0 is for batch dimension
-    return self.linear(self.fc(x))
+    x = self.sigmoid(x)
+    #x = torch.cat((x, metadata), 1) # 1 because 0 is for batch dimension
+    #return self.linear(self.fc(x))
+    return self.linear(x)
 
-model.ft = module_with_concat_linear_layer(self.pretrained, num_metadata, num_measures)
-
+model_ft = module_with_concat_linear_layer(model_pretrained, num_metadata, num_measures)
+#num_ftrs = model_pretrained.fc.in_features
+#model_pretrained.fc = nn.Linear(num_ftrs, 1)
 
 ######################################################################
 # Finetuning the convnet
@@ -98,8 +107,5 @@ else:
   optimizer = optim.Adam(model_ft.parameters(), lr=learning_rate)
   scheduler = None
 
-
 model_ft = train_model(dataloaders, model_ft, criterion, optimizer, scheduler,
-                       num_epochs=fine_tune_epochs)
-
-
+                       num_epochs=fine_tune_num_epochs)

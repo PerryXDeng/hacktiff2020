@@ -14,7 +14,6 @@ def get_angle(imgpath):
     j = json.load(f)
   return get_obliqueness(np.array(j['projection'])) 
 
-
 class SingleImageLabeledDataset(Dataset):
   def __init__(self, data_dir, packages_paths_filepath,
                transform=None, size_cutoff=None):
@@ -27,6 +26,7 @@ class SingleImageLabeledDataset(Dataset):
                           size_cutoff)
                           for package_path in tqdm(package_paths)]
     self.imagepaths = [imagepath for imagepaths in package_imagepaths for imagepath in imagepaths]
+    self.imagepaths = [path for path in self.imagepaths if "oblique" not in path]
     print("done with filtering")
     self.transform = transform
     print('load measurements')
