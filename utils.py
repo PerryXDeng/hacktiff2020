@@ -2,6 +2,8 @@ import os
 from PIL import Image
 import json
 import numpy as np
+from shapely.geometry import Polygon, MultiPolygon
+from shapely.ops import unary_union
 
 def get_image_size(img_path):
     return Image.open(img_path).size
@@ -64,8 +66,6 @@ def get_transformer_for_crs(crs):
 def get_transformer_for_lat_lon(lat, lon):
     return get_transformer_for_crs(utm_crs_from_latlon(lat, lon))
 
-from shapely.geometry import Polygon, MultiPolygon
-from shapely.ops import unary_union
 def _get_building_outlines(geojson_path):
     roof_polygons = _get_roof_polygons(geojson_path)
     

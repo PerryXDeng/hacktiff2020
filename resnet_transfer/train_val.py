@@ -25,7 +25,6 @@ from resnet_transfer.config import *
 dataset = None 
 total = len(dataset)
 
-
 phases = ['train'] # change it to just train if val is no longer needed
 
 #if len(phases) == 2:
@@ -50,8 +49,6 @@ dataloaders = {x: torch.utils.data.DataLoader(partitions[x], batch_size=batch_si
 
 partition_sizes = {x: len(partitions[x]) for x in phases}
 class_names = partitions['train'].classes
-
-
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 

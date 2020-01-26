@@ -1,5 +1,6 @@
 import time
 import copy
+import torch
 
 def train_model(dataloaders, model, criterion, optimizer, scheduler, num_epochs):
     since = time.time()
@@ -22,9 +23,9 @@ def train_model(dataloaders, model, criterion, optimizer, scheduler, num_epochs)
 
             # Iterate over data.
             for images, metadata, labels in dataloaders[phase]:
-                images = images.to(device)
-                metadata = metadata.to(device)
-                labels = labels.to(device)
+                images = images.cuda()
+                metadata = metadata.cuda()
+                labels = labels.cuda()
 
                 # zero the parameter gradients
                 optimizer.zero_grad()
