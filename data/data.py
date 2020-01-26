@@ -2,7 +2,7 @@ import numpy as np
 import os
 import torch
 from torch.utils.data import Dataset
-from skimage import io
+from PIL import Image
 import glob
 from utils import getjsons, get_image_size, image_size_compliant, filter_imagepaths
 from tqdm import tqdm
@@ -19,6 +19,8 @@ class SingleImageLabeledDataset(Dataset):
                           glob.glob(os.path.join(package_path, "*/*.jpg")),
                           size_cutoff)
                           for package_path in tqdm(package_paths)]
+    self.imagepaths = [imagepath for imagepaths in package_imagepaths for imagepath in imagepaths]
+    print("done with filtering")
     self.transform = transform
     self.package_measurements = {}
     self.package_3d = {}
@@ -30,14 +32,14 @@ class SingleImageLabeledDataset(Dataset):
     if torch.is_tensor(idx):
       idx = idx.tolist()
     img_path = self.imagepaths[idx]
-    image = io.imread(img_path)
+    image = Image.open(img_path)
     
     geojson_path, imgjson_path, im_type = getjsons(img_path)
-    metadata = None
-    measurements = None
+    metadata = 1
+    measurements = 1
     
     if self.transform is not None:
-      observation = self.transform(image)
+      image = self.transform(image)
 
     observation = {'image': image, 'metadata': metadata,
                    'measurements': measurements, 'img_path': img_path}
